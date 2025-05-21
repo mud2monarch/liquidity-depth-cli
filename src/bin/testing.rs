@@ -72,13 +72,14 @@ async fn main() -> anyhow::Result<()> {
         let block = msg?; // Result<BlockUpdate>
         blocks_seen += 1;
 
-        println!("📦 Block #{}", block.block_number);
+        println!("Block #{}", block.block_number);
         println!("   → {} states", block.states.len());
         println!("   → {} new pairs", block.new_pairs.len());
         println!("   → {} removed pairs", block.removed_pairs.len());
         
         // Print first few states for debugging
-        for (_id, state) in block.states.iter().take(1) {
+        for (_id, state) in block.states.iter() {
+            // println!("{:#?}", state); Not doing full debugging for this
             let out = state.get_amount_out(
                 u256_to_biguint(weth.one()),
                 &weth,

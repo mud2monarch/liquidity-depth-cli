@@ -68,7 +68,17 @@ async fn main() -> anyhow::Result<()> {
     println!("🛰  waiting for first block …");
 
     let mut blocks_seen = 0;
+    let mut tracked_pairs = HashMap::new();
     while let Some(msg) = stream.next().await {
+        
+        // update tracked pairs
+        for (id, pool) in msg?.new_pairs.iter() {
+            tracked_pairs.insert(id.clone(), pool.tokens.clone());
+        }
+        for (id, pool) in msg?.removed_pairs.iter() {
+            tracked_pairs.remove(id);
+        }
+
         let block = msg?; // Result<BlockUpdate>
         blocks_seen += 1;
 

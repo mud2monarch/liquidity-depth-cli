@@ -1,4 +1,4 @@
-use std::{env, str::FromStr};
+use std::{collections::HashMap, env};
 use num_bigint::BigUint;
 use tycho_common::{
     models::Chain,
@@ -37,18 +37,19 @@ async fn main() -> anyhow::Result<()> {
     .await;
 
     let usdc = Token::new(
-        "0x4200000000000000000000000000000000000006",
+        "0x078D782b760474a361dDA0AF3839290b0EF57AD6",
         6,
         "USDC",
         10_000.to_biguint().unwrap()
     );
-
-    let weth = Token::new(
-        "0x078D782b760474a361dDA0AF3839290b0EF57AD6",
+    let native_eth = Token::new(
+        "0x0000000000000000000000000000000000000000",
         18,
         "WETH",
         10_000.to_biguint().unwrap()
     );
+    let mut test_pair = vec![usdc.clone(), native_eth.clone()];
+    test_pair.sort_unstable_by_key(|t: &Token| t.address.clone());
 
     // ── build exactly the same ProtocolStream as in main.rs ───────────────────
     let tvl_filter = ComponentFilter::with_tvl_range(500.0, 500.0);
@@ -66,20 +67,26 @@ async fn main() -> anyhow::Result<()> {
     .expect("failed to build protocol stream");
 
     println!("🛰  waiting for first block …");
-
+    
+    println!("test tokens: {:?}", test_pair);
     let mut blocks_seen = 0;
     let mut tracked_pairs = HashMap::new();
+    let mut tracked_states = HashMap::new();
+
     while let Some(msg) = stream.next().await {
-        
+        let block = msg?;
         // update tracked pairs
-        for (id, pool) in msg?.new_pairs.iter() {
+        for (id, pool) in block.new_pairs.iter() {
             tracked_pairs.insert(id.clone(), pool.tokens.clone());
         }
-        for (id, pool) in msg?.removed_pairs.iter() {
+        for (id, pool) in block.removed_pairs.iter() {
             tracked_pairs.remove(id);
         }
 
-        let block = msg?; // Result<BlockUpdate>
+        for (id, state) in block.states.iter() {
+            tracked_states.insert(id.clone(), state.clone());
+        }
+
         blocks_seen += 1;
 
         println!("Block #{}", block.block_number);
@@ -87,21 +94,30 @@ async fn main() -> anyhow::Result<()> {
         println!("   → {} new pairs", block.new_pairs.len());
         println!("   → {} removed pairs", block.removed_pairs.len());
         
-        // Print first few states for debugging
-        for (_id, state) in block.states.iter() {
-            // println!("{:#?}", state); Not doing full debugging for this
-            let out = state.get_amount_out(
-                u256_to_biguint(weth.one()),
-                &weth,
-                &usdc).unwrap().amount;
-            println!(" 1 WETH = {} USDC", out);
-        }
-        
+        for (id, tokens) in tracked_pairs.iter() {
+            if tokens == &test_pair {
+                let out = tracked_states.get(id)
+                    .unwrap()
+                    .get_amount_out(
+                        u256_to_biguint(native_eth.one()),
+                        &native_eth,
+                        &usdc)
+                        .expect("failed to get amount out")
+                        .amount;
+                println!("✅ 1 ETH = {} USDC", out);
+            } else {
+                println!("🔴 skipping pair {} - {}", tokens[0].symbol, tokens[1].symbol);
+                // println!("This is Token {:?}", tokens);
+            }
+        };
+
         if blocks_seen >= 20 {
             println!("Seen {} blocks", blocks_seen);
             break;
         }
-    }
+    };
+
+    let slippage: f64 = 0.0;
 
     // // ── consume a single block update ─────────────────────────────────────────
     // while let Some(msg) = stream.next().await {
@@ -132,12 +148,12 @@ async fn main() -> anyhow::Result<()> {
     //         .await?;
 
     //         // spot price
-    //         let spot = state.spot_price(weth, usdc)?;
+    //         let spot = state.spot_price(native_eth, usdc)?;
     //         println!("🟢 spot_price 1 WETH → {spot:.6} USDC");
 
     //         // amount-out for 1 WETH
     //         let one_weth = BigUint::from(1_000_000_000_000_000_000u128);
-    //         let out = state.get_amount_out(one_weth.clone(), weth, usdc)?;
+    //         let out = state.get_amount_out(one_weth.clone(), native_eth, usdc)?;
     //         let out_f64 = out.amount.to_f64().unwrap() / 1e6; // USDC has 6 dec
     //         println!("💸 get_amount_out: 1 WETH → {out_f64:.2} USDC (gas {})", out.gas);
 

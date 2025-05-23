@@ -2,32 +2,22 @@
 name = "liquidity-depth-cli"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
-# Async runtime (used by Tycho + reqs like ProtocolStreamBuilder)
 tokio = { version = "1.37", features = ["full"] }
-
-# Tycho Simulation: pick ONE of the following
-
-# Option 1: Git-based
+# Tycho dependencies
 tycho-simulation = { git = "https://github.com/propeller-heads/tycho-simulation.git", package = "tycho-simulation" }
-
-# Option 2: Local path (uncomment if you're working with a local clone)
-# tycho-simulation = { path = "../tycho-simulation/tycho-simulation" }
-
-# CLI argument parsing
+tycho-common = "0.70.5"
+tycho-client = { git = "https://github.com/propeller-heads/tycho-indexer.git", package = "tycho-client" }
 clap = { version = "4", features = ["derive"] }
-
-# Logging
+futures = "0.3"
+num-bigint = "0.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
-
-# JSON logging and file output
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-
-# Optional: Terminal UI with ratatui
 ratatui = "0.26"
-
-# Optional: coloring output
 crossterm = "0.27"
+anyhow = "1.0.98"
+tracing-appender = "0.2.3"

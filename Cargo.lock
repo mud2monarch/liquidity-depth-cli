@@ -4238,14 +4238,20 @@ checksum = "cd945864f07fe9f5371a27ad7b52a172b4b499999f1d97574c9fa68373937e12"
 name = "liquidity-depth-cli"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap",
  "crossterm 0.27.0",
+ "futures 0.3.31",
+ "num-bigint",
  "ratatui",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
+ "tracing-appender",
  "tracing-subscriber",
+ "tycho-client 0.70.6",
+ "tycho-common 0.70.5",
  "tycho-simulation",
 ]
 
@@ -7236,7 +7242,33 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
- "tycho-common",
+ "tycho-common 0.70.5",
+ "uuid 1.16.0",
+]
+
+[[package]]
+name = "tycho-client"
+version = "0.70.6"
+source = "git+https://github.com/propeller-heads/tycho-indexer.git#96dd525409a2fd1af855424a4db6480de4ba295d"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "clap",
+ "futures 0.3.31",
+ "hex",
+ "hyper 0.14.32",
+ "lru",
+ "reqwest 0.12.15",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-tungstenite 0.20.1",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "tycho-common 0.70.6",
  "uuid 1.16.0",
 ]
 
@@ -7245,6 +7277,29 @@ name = "tycho-common"
 version = "0.70.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22afc488ba537fb646c697fbe93e0abcccb2c34c9bcb0ef5064363f5b1444d5d"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bytes",
+ "chrono",
+ "hex",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "strum 0.25.0",
+ "strum_macros 0.25.3",
+ "thiserror 1.0.69",
+ "tiny-keccak",
+ "tracing",
+ "typetag",
+ "utoipa",
+ "uuid 1.16.0",
+]
+
+[[package]]
+name = "tycho-common"
+version = "0.70.6"
+source = "git+https://github.com/propeller-heads/tycho-indexer.git#96dd525409a2fd1af855424a4db6480de4ba295d"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7296,8 +7351,8 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "tycho-client",
- "tycho-common",
+ "tycho-client 0.70.5",
+ "tycho-common 0.70.5",
  "uuid 1.16.0",
 ]
 

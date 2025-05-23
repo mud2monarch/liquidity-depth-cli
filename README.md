@@ -31,8 +31,9 @@ This tool gives a fast, scriptable way to inspect protocol-level liquidity witho
 ## Getting Started
 
 ```bash
-cargo run --release
+# Not possible to run this right now
+```
 
 ## Feat/TODO
 - Feat: Generic over ApiProvider to integrate other APIs like Uniswap Routing API, 0x, Odos, 1Inch, etc.
-- TODO: keep track of which pairs/ProtocolStates have been updated from the stream
+- ~~TODO: keep track of which pairs/ProtocolStates have been updated from the stream~~

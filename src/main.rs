@@ -30,10 +30,10 @@ use utils::get_default_url;
 #[derive(Parser)]
 struct Cli {
     /// The tvl threshold to filter the graph by
-    #[arg(short, long, default_value_t = 1000.0)]
+    #[arg(short, long, default_value_t = 500.0)]
     tvl_threshold: f64,
     /// The target blockchain
-    #[clap(long, default_value = "ethereum")]
+    #[clap(long, default_value = "unichain")]
     pub chain: String,
 }
 

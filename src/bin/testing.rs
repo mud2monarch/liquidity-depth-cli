@@ -2,8 +2,7 @@ use std::{
     collections::HashMap,
     env,
 };
-
-
+use liquidity_depth_cli::binary_search::*;
 use num_bigint::BigUint;
 use tycho_common::{
     models::Chain,
@@ -11,24 +10,41 @@ use tycho_common::{
 };
 use num_bigint::ToBigUint;
 use tycho_simulation::{
+    protocol::{
+        state::ProtocolSim,
+        models::BlockUpdate,
+    },
     evm::{
         engine_db::tycho_db::PreCachedDB,
         protocol::{
-            ekubo::state::EkuboState, filters::{balancer_pool_filter, curve_pool_filter, uniswap_v4_pool_with_hook_filter}, u256_num::u256_to_biguint, uniswap_v2::state::UniswapV2State, uniswap_v3::state::UniswapV3State, uniswap_v4::state::UniswapV4State, vm::state::EVMPoolState
+            ekubo::state::EkuboState, 
+            filters::{balancer_pool_filter, curve_pool_filter, uniswap_v4_pool_with_hook_filter},
+            u256_num::u256_to_biguint,
+            uniswap_v2::state::UniswapV2State,
+            uniswap_v3::state::UniswapV3State,
+            uniswap_v4::state::UniswapV4State,
+            vm::state::EVMPoolState,
         },
         stream::ProtocolStreamBuilder,
-    }, models::Token, protocol::models::BlockUpdate, tycho_client::feed::component_tracker::ComponentFilter, utils::load_all_tokens
+    },
+    models::Token,
+    tycho_client::feed::component_tracker::ComponentFilter,
+    utils::load_all_tokens
 };
 use futures::StreamExt;
+use tracing::{info, error, warn, debug};
+use tracing_subscriber;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    tracing_subscriber::fmt::init();
+
     // ── env / CLI boilerplate ──────────────────────────────────────────────────
     let chain = Chain::Unichain;
     let tycho_url = env::var("TYCHO_URL")
-        .unwrap_or_else(|_| "tycho-unichain-beta.propellerheads.xyz".into());
+        .unwrap_or_else(|_| String::from("tycho-unichain-beta.propellerheads.xyz"));
     let tycho_api_key =
-        env::var("TYCHO_API_KEY").unwrap_or_else(|_| "sampletoken".into());
+        env::var("TYCHO_API_KEY").unwrap_or_else(|_| String::from("sampletoken"));
 
     // load full token list once
     let tokens = load_all_tokens(
@@ -50,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
     let native_eth = Token::new(
         "0x0000000000000000000000000000000000000000",
         18,
-        "WETH",
+        "ETH",
         10_000.to_biguint().unwrap()
     );
     let mut test_pair = vec![usdc.clone(), native_eth.clone()];
@@ -101,8 +117,9 @@ async fn main() -> anyhow::Result<()> {
         
         for (id, tokens) in tracked_pairs.iter() {
             if tokens == &test_pair {
-                let out = tracked_states.get(id)
-                    .unwrap()
+                let state: &Box<dyn ProtocolSim> = tracked_states.get(id)
+                    .unwrap();
+                let out = state.clone()
                     .get_amount_out(
                         u256_to_biguint(native_eth.one()),
                         &native_eth,
@@ -110,19 +127,32 @@ async fn main() -> anyhow::Result<()> {
                         .expect("failed to get amount out")
                         .amount;
                 println!("✅ 1 ETH = {} USDC", out);
+
+                // TODO: start testing here
+                // We need to get the matching state from tracked_states
+                
+                let slippage: f64 = 0.02;
+                let precision: f64 = 0.0001;
+                let output_for_two_percent = calculate_output_for_slippage_tolerance(
+                    slippage,
+                    precision,
+                    state,
+                    &native_eth,
+                    &usdc);
+
+                println!("Output for 2% slippage: {:?}", output_for_two_percent);
             } else {
                 println!("🔴 skipping pair {} - {}", tokens[0].symbol, tokens[1].symbol);
                 // println!("This is Token {:?}", tokens);
             }
         };
 
-        if blocks_seen >= 20 {
+        if blocks_seen >= 5 {
             println!("Seen {} blocks", blocks_seen);
+
             break;
         }
     };
-
-    let slippage: f64 = 0.0;
 
     // // ── consume a single block update ─────────────────────────────────────────
     // while let Some(msg) = stream.next().await {
